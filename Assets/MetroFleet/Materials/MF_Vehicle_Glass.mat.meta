@@ -1,0 +1,15 @@
+fileFormatVersion: 2
+guid: cb0dc2265da4e874da87b21a9e69a0bd
+NativeFormatImporter:
+  externalObjects: {}
+  mainObjectFileID: 2100000
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 415904
+  packageName: "MetroFleet \u2013 20 Low-Poly City Vehicles"
+  packageVersion: 1.0
+  assetPath: Assets/MetroFleet/Materials/MF_Vehicle_Glass.mat
+  uploadId: 1016764
