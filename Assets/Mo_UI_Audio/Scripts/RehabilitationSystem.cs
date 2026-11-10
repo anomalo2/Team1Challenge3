@@ -1,4 +1,5 @@
 
+using System.Collections;
 using UnityEngine;
 using UnityEngine.UI;
 using TMPro;
@@ -18,7 +19,26 @@ public class RehabilitationSystem : MonoBehaviour
     [SerializeField] private AudioClip goodDeedSound;
     [SerializeField] private AudioClip destructionSound;
 
+    [Header("Audio Volume")]
+    [Range(0f, 1f)]
+    [SerializeField] private float destructionVolume = 0.35f;
+
+    [Range(0f, 1f)]
+    [SerializeField] private float goodDeedVolume = 1f;
+
+    [Header("Failure Warning Effect")]
+    [SerializeField] private Image failureFlash;
+
+    [Range(0f, 0.5f)]
+    [SerializeField] private float flashOpacity = 0.25f;
+
+    [Header("Warning Animation Timing")]
+    [SerializeField] private float fadeInDuration = 2f;
+    [SerializeField] private float holdDuration = 2f;
+    [SerializeField] private float fadeOutDuration = 2f;
+
     private int progress = 0;
+    private Coroutine flashCoroutine;
 
     private void Start()
     {
@@ -27,6 +47,8 @@ public class RehabilitationSystem : MonoBehaviour
             progressBar.minValue = 0;
             progressBar.maxValue = 100;
         }
+
+        SetFlashAlpha(0f);
 
         UpdateUI("WELCOME TO REDEMPTION OS. " +
                  "YOUR REPUTATION IS BEYOND REPAIR.");
@@ -43,7 +65,7 @@ public class RehabilitationSystem : MonoBehaviour
             : "GOOD DEED RECORDED. PUBLIC REMAINS SUSPICIOUS.";
 
         UpdateUI(message);
-        PlaySound(goodDeedSound);
+        PlaySound(goodDeedSound, goodDeedVolume);
     }
 
     // Called whenever destruction occurs
@@ -65,7 +87,16 @@ public class RehabilitationSystem : MonoBehaviour
             Random.Range(0, warnings.Length)];
 
         UpdateUI(warning);
-        PlaySound(destructionSound);
+        PlaySound(destructionSound, destructionVolume);
+
+        // Restart the red warning animation
+        if (failureFlash != null)
+        {
+            if (flashCoroutine != null)
+                StopCoroutine(flashCoroutine);
+
+            flashCoroutine = StartCoroutine(FlashWarning());
+        }
     }
 
     private void UpdateUI(string message)
@@ -80,13 +111,75 @@ public class RehabilitationSystem : MonoBehaviour
             statusMessage.text = message;
     }
 
-    private void PlaySound(AudioClip clip)
+    private void PlaySound(AudioClip clip, float volume)
     {
         if (audioSource != null && clip != null)
-            audioSource.PlayOneShot(clip);
+            audioSource.PlayOneShot(clip, volume);
     }
 
-    // Test directly from the Unity Inspector
+    // Slow red warning animation
+    private IEnumerator FlashWarning()
+    {
+        SetFlashAlpha(0f);
+
+        // Phase 1: Slowly turn red
+        yield return FadeFlash(
+            flashOpacity, fadeInDuration);
+
+        // Phase 2: Stay red
+        yield return new WaitForSeconds(
+            Mathf.Max(0f, holdDuration));
+
+        // Phase 3: Slowly return to normal
+        yield return FadeFlash(
+            0f, fadeOutDuration);
+
+        flashCoroutine = null;
+    }
+
+    private IEnumerator FadeFlash(float targetAlpha, float duration)
+    {
+        if (failureFlash == null)
+            yield break;
+
+        float startAlpha = failureFlash.color.a;
+        float elapsed = 0f;
+
+        duration = Mathf.Max(0.01f, duration);
+
+        while (elapsed < duration)
+        {
+            elapsed += Time.deltaTime;
+
+            float t = Mathf.Clamp01(elapsed / duration);
+            float alpha = Mathf.Lerp(
+                startAlpha, targetAlpha, t);
+
+            SetFlashAlpha(alpha);
+
+            yield return null;
+        }
+
+        SetFlashAlpha(targetAlpha);
+    }
+
+    private void SetFlashAlpha(float alpha)
+    {
+        if (failureFlash == null)
+            return;
+
+        Color color = failureFlash.color;
+        color.a = alpha;
+        failureFlash.color = color;
+    }
+
+    private void OnDisable()
+    {
+        SetFlashAlpha(0f);
+        flashCoroutine = null;
+    }
+
+    // Test directly from Unity Inspector
     [ContextMenu("TEST - Complete Good Deed")]
     private void TestGoodDeed()
     {
