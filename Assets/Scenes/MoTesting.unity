@@ -3541,9 +3541,21 @@ PrefabInstance:
       value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 1545613273622711427, guid: 09b2c65455402b2458ddf4c27685f31f, type: 3}
+      propertyPath: holdDuration
+      value: 2
+      objectReference: {fileID: 0}
+    - target: {fileID: 1545613273622711427, guid: 09b2c65455402b2458ddf4c27685f31f, type: 3}
       propertyPath: goodDeedSound
       value: 
       objectReference: {fileID: 8300000, guid: 230b85cb99e0098458cadd3c568f925c, type: 3}
+    - target: {fileID: 1545613273622711427, guid: 09b2c65455402b2458ddf4c27685f31f, type: 3}
+      propertyPath: fadeInDuration
+      value: 2
+      objectReference: {fileID: 0}
+    - target: {fileID: 1545613273622711427, guid: 09b2c65455402b2458ddf4c27685f31f, type: 3}
+      propertyPath: fadeOutDuration
+      value: 2
+      objectReference: {fileID: 0}
     - target: {fileID: 1545613273622711427, guid: 09b2c65455402b2458ddf4c27685f31f, type: 3}
       propertyPath: destructionSound
       value: 
