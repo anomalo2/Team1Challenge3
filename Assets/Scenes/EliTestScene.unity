@@ -177,6 +177,10 @@ PrefabInstance:
     serializedVersion: 3
     m_TransformParent: {fileID: 0}
     m_Modifications:
+    - target: {fileID: -9165797768001435688, guid: 70c2af14b8b17124db966af57b1457c0, type: 3}
+      propertyPath: m_UpdateWhenOffscreen
+      value: 1
+      objectReference: {fileID: 0}
     - target: {fileID: -8679921383154817045, guid: 70c2af14b8b17124db966af57b1457c0, type: 3}
       propertyPath: m_LocalScale.x
       value: 0.2
@@ -233,9 +237,113 @@ PrefabInstance:
       propertyPath: m_ConstrainProportionsScale
       value: 1
       objectReference: {fileID: 0}
+    - target: {fileID: -8047898860197281640, guid: 70c2af14b8b17124db966af57b1457c0, type: 3}
+      propertyPath: m_UpdateWhenOffscreen
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: -8016412588606473749, guid: 70c2af14b8b17124db966af57b1457c0, type: 3}
+      propertyPath: m_UpdateWhenOffscreen
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: -7772528068780816478, guid: 70c2af14b8b17124db966af57b1457c0, type: 3}
+      propertyPath: m_UpdateWhenOffscreen
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: -7594232071669212793, guid: 70c2af14b8b17124db966af57b1457c0, type: 3}
+      propertyPath: m_UpdateWhenOffscreen
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: -6434811245251441170, guid: 70c2af14b8b17124db966af57b1457c0, type: 3}
+      propertyPath: m_UpdateWhenOffscreen
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: -6002508473797582251, guid: 70c2af14b8b17124db966af57b1457c0, type: 3}
+      propertyPath: m_UpdateWhenOffscreen
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: -5082779332595062740, guid: 70c2af14b8b17124db966af57b1457c0, type: 3}
+      propertyPath: m_UpdateWhenOffscreen
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: -4612520378060379669, guid: 70c2af14b8b17124db966af57b1457c0, type: 3}
+      propertyPath: m_UpdateWhenOffscreen
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: -4202798675411607032, guid: 70c2af14b8b17124db966af57b1457c0, type: 3}
+      propertyPath: m_UpdateWhenOffscreen
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: -4174548533208279915, guid: 70c2af14b8b17124db966af57b1457c0, type: 3}
+      propertyPath: m_UpdateWhenOffscreen
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: -3349412186038797840, guid: 70c2af14b8b17124db966af57b1457c0, type: 3}
+      propertyPath: m_UpdateWhenOffscreen
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: -3125026678920138231, guid: 70c2af14b8b17124db966af57b1457c0, type: 3}
+      propertyPath: m_UpdateWhenOffscreen
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: -2719973373154163401, guid: 70c2af14b8b17124db966af57b1457c0, type: 3}
+      propertyPath: m_UpdateWhenOffscreen
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: -2473780591329602647, guid: 70c2af14b8b17124db966af57b1457c0, type: 3}
+      propertyPath: m_UpdateWhenOffscreen
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: -2223059088918091694, guid: 70c2af14b8b17124db966af57b1457c0, type: 3}
+      propertyPath: m_UpdateWhenOffscreen
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: -1527614881612994136, guid: 70c2af14b8b17124db966af57b1457c0, type: 3}
+      propertyPath: m_UpdateWhenOffscreen
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: -1526964690268444965, guid: 70c2af14b8b17124db966af57b1457c0, type: 3}
+      propertyPath: m_UpdateWhenOffscreen
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: -1404086235377219246, guid: 70c2af14b8b17124db966af57b1457c0, type: 3}
+      propertyPath: m_UpdateWhenOffscreen
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: -1028401375704162923, guid: 70c2af14b8b17124db966af57b1457c0, type: 3}
+      propertyPath: m_UpdateWhenOffscreen
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: -809828480950454423, guid: 70c2af14b8b17124db966af57b1457c0, type: 3}
+      propertyPath: m_UpdateWhenOffscreen
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 231210048726488771, guid: 70c2af14b8b17124db966af57b1457c0, type: 3}
+      propertyPath: m_UpdateWhenOffscreen
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 718193872720482655, guid: 70c2af14b8b17124db966af57b1457c0, type: 3}
+      propertyPath: m_UpdateWhenOffscreen
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 902343934094000621, guid: 70c2af14b8b17124db966af57b1457c0, type: 3}
+      propertyPath: m_UpdateWhenOffscreen
+      value: 1
+      objectReference: {fileID: 0}
     - target: {fileID: 919132149155446097, guid: 70c2af14b8b17124db966af57b1457c0, type: 3}
       propertyPath: m_Name
       value: mech_v0_armsOnly
+      objectReference: {fileID: 0}
+    - target: {fileID: 2622315507144001795, guid: 70c2af14b8b17124db966af57b1457c0, type: 3}
+      propertyPath: m_UpdateWhenOffscreen
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 3076138552580877421, guid: 70c2af14b8b17124db966af57b1457c0, type: 3}
+      propertyPath: m_UpdateWhenOffscreen
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 5742066667910392887, guid: 70c2af14b8b17124db966af57b1457c0, type: 3}
+      propertyPath: m_UpdateWhenOffscreen
+      value: 1
       objectReference: {fileID: 0}
     - target: {fileID: 6490625522564147758, guid: 70c2af14b8b17124db966af57b1457c0, type: 3}
       propertyPath: m_LocalPosition.x
@@ -249,8 +357,38 @@ PrefabInstance:
       propertyPath: m_LocalPosition.z
       value: 3.02
       objectReference: {fileID: 0}
+    - target: {fileID: 6552062264705231799, guid: 70c2af14b8b17124db966af57b1457c0, type: 3}
+      propertyPath: m_UpdateWhenOffscreen
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 6663737150208420782, guid: 70c2af14b8b17124db966af57b1457c0, type: 3}
+      propertyPath: m_UpdateWhenOffscreen
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 7218280213983692513, guid: 70c2af14b8b17124db966af57b1457c0, type: 3}
+      propertyPath: m_UpdateWhenOffscreen
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 7603786706384944740, guid: 70c2af14b8b17124db966af57b1457c0, type: 3}
+      propertyPath: m_UpdateWhenOffscreen
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 7831909060113432234, guid: 70c2af14b8b17124db966af57b1457c0, type: 3}
+      propertyPath: m_UpdateWhenOffscreen
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 8510132731797305157, guid: 70c2af14b8b17124db966af57b1457c0, type: 3}
+      propertyPath: m_UpdateWhenOffscreen
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 8662654272577283544, guid: 70c2af14b8b17124db966af57b1457c0, type: 3}
+      propertyPath: m_UpdateWhenOffscreen
+      value: 1
+      objectReference: {fileID: 0}
     m_RemovedComponents: []
-    m_RemovedGameObjects: []
+    m_RemovedGameObjects:
+    - {fileID: -7146521406498821007, guid: 70c2af14b8b17124db966af57b1457c0, type: 3}
+    - {fileID: -2764512629625626004, guid: 70c2af14b8b17124db966af57b1457c0, type: 3}
     m_AddedGameObjects:
     - targetCorrespondingSourceObject: {fileID: -8679921383154817045, guid: 70c2af14b8b17124db966af57b1457c0, type: 3}
       insertIndex: -1
@@ -345,6 +483,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::HumanToMechBoneMirror
   playerBone: {fileID: 2068436169}
+  rotateOffset: {x: 0, y: 0, z: 0}
 --- !u!4 &366516992 stripped
 Transform:
   m_CorrespondingSourceObject: {fileID: 3477608119097269977, guid: 70c2af14b8b17124db966af57b1457c0, type: 3}
@@ -1255,6 +1394,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::HumanToMechBoneMirror
   playerBone: {fileID: 1905013439}
+  rotateOffset: {x: 0, y: 0, z: 0}
 --- !u!1 &1854146764 stripped
 GameObject:
   m_CorrespondingSourceObject: {fileID: 5966074166800511893, guid: 70c2af14b8b17124db966af57b1457c0, type: 3}
@@ -1278,6 +1418,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::HumanToMechBoneMirror
   playerBone: {fileID: 95740774}
+  rotateOffset: {x: 0, y: 180, z: 0}
 --- !u!4 &1864938038 stripped
 Transform:
   m_CorrespondingSourceObject: {fileID: -4247713213967434454, guid: 70c2af14b8b17124db966af57b1457c0, type: 3}
@@ -1306,6 +1447,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::HumanToMechBoneMirror
   playerBone: {fileID: 1490738879}
+  rotateOffset: {x: 0, y: 0, z: 0}
 --- !u!4 &1905013439 stripped
 Transform:
   m_CorrespondingSourceObject: {fileID: 6164296942931662343, guid: 4e296033a23b0864fb55720da6099e78, type: 3}
@@ -1329,6 +1471,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::HumanToMechBoneMirror
   playerBone: {fileID: 1001060221}
+  rotateOffset: {x: 0, y: 0, z: 0}
 --- !u!4 &1952520078 stripped
 Transform:
   m_CorrespondingSourceObject: {fileID: -6297167505944281151, guid: 70c2af14b8b17124db966af57b1457c0, type: 3}
@@ -1362,6 +1505,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: '::'
   playerBone: {fileID: 1258414532}
+  rotateOffset: {x: 0, y: 0, z: 0}
 --- !u!4 &2068436169 stripped
 Transform:
   m_CorrespondingSourceObject: {fileID: 8025029066016247045, guid: 4e296033a23b0864fb55720da6099e78, type: 3}
