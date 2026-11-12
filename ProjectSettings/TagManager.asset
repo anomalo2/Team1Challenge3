@@ -13,10 +13,10 @@ TagManager:
   - UI
   - MechCollider
   - 
-  - 
-  - 
-  - 
-  - 
+  - Mech
+  - Vehicle
+  - Civilian
+  - Crushable
   - 
   - 
   - 
