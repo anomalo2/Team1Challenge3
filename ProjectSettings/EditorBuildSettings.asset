@@ -14,6 +14,12 @@ EditorBuildSettings:
   - enabled: 1
     path: Assets/Scenes/JohnTesting.unity
     guid: 753387583e01476439236528a7f02399
+  - enabled: 1
+    path: Assets/Scenes/AudreysCopy.unity
+    guid: 0a1b8a93f9ac938468f6c60564b399e2
+  - enabled: 0
+    path: Assets/Scenes/AudreyTesting.unity
+    guid: 7e9a3abfee80d604ba119502ceac2617
   m_configObjects:
     com.unity.input.settings.actions: {fileID: -944628639613478452, guid: 052faaac586de48259a63d0c4782560b, type: 3}
     com.unity.xr.management.loader_settings: {fileID: 11400000, guid: dbb5921654376a249ba128b69b95bd5d, type: 2}
