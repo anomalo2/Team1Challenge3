@@ -53,12 +53,14 @@ public class SleepableBody : MonoBehaviour
 
     Rigidbody body;
     CarController car;
+    CrushableObject crushable;
     float restingSince = -1f;
 
     void Awake()
     {
         body = GetComponent<Rigidbody>();
         car = GetComponentInParent<CarController>();
+        crushable = GetComponentInParent<CrushableObject>();
     }
 
     void OnEnable()
@@ -143,6 +145,11 @@ public class SleepableBody : MonoBehaviour
         }
 
         if (!IsAwake || settleTime <= 0f || body == null) return;
+
+        // A held object is kinematic and motionless relative to physics, so
+        // it would read as "settled" and be put to sleep in the mech's hand.
+        // Being held is being acted on: never settle while held.
+        if (crushable != null && crushable.IsHeld) { restingSince = -1f; return; }
 
         bool moving = body.linearVelocity.sqrMagnitude > settleSpeed * settleSpeed
                       || body.angularVelocity.sqrMagnitude > settleSpeed * settleSpeed;

@@ -233,7 +233,30 @@ kinematic body does not report collisions dependably.
 
 This is all the mech developer has to do.
 
-### Hands
+### Hands — now automatic (`MechLimbPhysics`)
+
+The mech's physics hands are the kinematic `RigidbodyFollowBone` bodies under
+`PhysicsColliders` (layer `MechCollider`). `Crush/MechLimbPhysics.cs` attaches
+itself to every one of them after each scene load — no scene wiring:
+
+- **Knocking:** PhysX makes no contacts between two kinematic bodies, and
+  driving cars / sleeping props are kinematic, so the hands used to pass
+  straight through them. Each FixedUpdate the limb overlaps its own colliders
+  against `Vehicle` + `Crushable` and wakes what it touches (a driving car
+  stops being traffic and goes dynamic), handing over the hand's velocity.
+  From then on the hand shoves it with real physics. A fast hit
+  (`impactMass` × closing speed) also dents it. `Civilian` is excluded.
+- **Grabbing:** bodies with "hand" in the name get a `GrabVolume` child
+  (trigger sphere sized to the hand colliders) with `MechGrabber` +
+  `HandTrackedGripSource`, handedness from the name. Close fist = hold,
+  wrist twist = crush, open = drop/throw. The held object ignores collisions
+  with that fist while held and for `releaseGrace` seconds after.
+
+To tune one hand, add `MechLimbPhysics` to it in the inspector; auto-attach
+skips bodies that already have it. `MechLimbPhysics.AutoAttach = false`
+disables it.
+
+The manual setup below still works if the mech ever drops the physics hands.
 
 Per hand: empty child GameObject `GrabVolume` on the hand bone, with a
 **Sphere Collider, `Is Trigger` ✔** sized to the palm. Add **MechGrabber**.

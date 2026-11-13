@@ -41,7 +41,38 @@ public class PhysicsSleepDirector : MonoBehaviour
     public static void Register(SleepableBody b)
     {
         if (b != null && !bodies.Contains(b)) bodies.Add(b);
+
+        // A scene that starts with no sleepable bodies (e.g. the mech test
+        // scenes) gets none from EnsureExists. Without a director nothing ever
+        // goes back to sleep, so create one the first time a body shows up -
+        // a spawned car, or a prop dropped in at runtime.
+        // Only after the first scene finished loading (EnsureExists covers the
+        // load itself), and only if no director is waiting to Awake - otherwise
+        // a body enabling before the scene's own director would replace it and
+        // its tuned radius/player.
+        if (Instance == null && Application.isPlaying && !quitting && firstLoadDone
+            && FindAnyObjectByType<PhysicsSleepDirector>(FindObjectsInactive.Include) == null)
+        {
+            GameObject go = new GameObject("PhysicsSleepDirector");
+            go.AddComponent<PhysicsSleepDirector>();
+        }
     }
+
+    static bool quitting;
+    static bool firstLoadDone;
+
+    [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
+    static void ResetStatics()
+    {
+        // Domain reload may be off in the editor; never carry state between plays.
+        quitting = false;
+        firstLoadDone = false;
+        bodies.Clear();
+        Application.quitting -= OnQuitting;
+        Application.quitting += OnQuitting;
+    }
+
+    static void OnQuitting() => quitting = true;
 
     public static void Unregister(SleepableBody b)
     {
@@ -63,6 +94,7 @@ public class PhysicsSleepDirector : MonoBehaviour
     [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.AfterSceneLoad)]
     static void EnsureExists()
     {
+        firstLoadDone = true;
         if (Instance != null) return;
         if (bodies.Count == 0) return;   // nothing to manage
 

@@ -81,7 +81,13 @@ public class CarController : MonoBehaviour
     public bool IsDriving { get; private set; } = true;
     public bool IsBraking { get; private set; }
 
+    [Header("Crashes")]
+    [Tooltip("Log what each car crashed into. Handy for spotting props that block lanes.")]
+    public bool logCrashes = true;
+
     Rigidbody body;
+    BoxCollider crashBox;
+    readonly Collider[] crashHits = new Collider[16];
     CrushableObject crushable;
     int targetIndex;
     float emergencyStopUntil = -1f;
@@ -92,6 +98,9 @@ public class CarController : MonoBehaviour
     {
         body = GetComponent<Rigidbody>();
         crushable = GetComponent<CrushableObject>();
+
+        foreach (BoxCollider b in GetComponentsInChildren<BoxCollider>(true))
+            if (!b.isTrigger) { crashBox = b; break; }
 
         body.isKinematic = true;
         targetIndex = startWaypoint;
@@ -177,6 +186,75 @@ public class CarController : MonoBehaviour
 
         Steer();
         Advance();
+
+        if (IsDriving) CheckForCrash();
+    }
+
+    /// <summary>
+    /// Kinematic bodies get no collisions with each other, so a driving car
+    /// would pass through the mech, parked props and other traffic. Check the
+    /// car's own box instead: touching a physics body - the mech's hands, feet
+    /// or body, a wreck, a woken prop - is a crash, and the car becomes a full
+    /// rigidbody simulation carrying its speed. Never a crash: static scenery
+    /// (road, kerbs, buildings: no rigidbody), parked props still asleep, and
+    /// other cars that are still driving.
+    /// Dynamic things that hit a driving car are already handled by
+    /// SleepableBody waking it on collision.
+    /// </summary>
+    void CheckForCrash()
+    {
+        if (crashBox == null) return;
+
+        Transform t = crashBox.transform;
+        Vector3 s = t.lossyScale;
+        Vector3 half = Vector3.Scale(crashBox.size * 0.5f, new Vector3(Mathf.Abs(s.x), Mathf.Abs(s.y), Mathf.Abs(s.z)));
+
+        int n = Physics.OverlapBoxNonAlloc(t.TransformPoint(crashBox.center), half, crashHits,
+            t.rotation, ~0, QueryTriggerInteraction.Ignore);
+
+        for (int i = 0; i < n; i++)
+        {
+            Collider other = crashHits[i];
+            if (other == null || other.transform.IsChildOf(transform)) continue;
+
+            Rigidbody rb = other.attachedRigidbody;
+            if (rb == null || rb == body) continue;
+
+            CarController otherCar = rb.GetComponent<CarController>();
+
+            // Two cars that are both still traffic never crash each other. The
+            // sensor misses a car it already overlaps, so queues and crossing
+            // lanes touch constantly; the traffic logic owns that. A car that
+            // has crashed is no longer driving, so running into a wreck still
+            // causes a pile-up.
+            if (otherCar != null && otherCar.IsDriving) continue;
+
+            // Parked scenery that is asleep (lamp posts, bins, kerbside props)
+            // is part of the street, not an accident: cars drove past it before
+            // and still do. Once something wakes it, it counts.
+            if (otherCar == null)
+            {
+                SleepableBody prop = rb.GetComponent<SleepableBody>();
+                if (prop != null && !prop.IsAwake) continue;
+            }
+
+            if (logCrashes)
+                Debug.Log($"[Car] {name} crashed into {other.name} (body {rb.name}, kinematic={rb.isKinematic}) at {transform.position:F1}", this);
+
+            Crash();
+            return;
+        }
+    }
+
+    /// <summary>Stop being traffic and become a physics wreck, keeping its momentum.</summary>
+    public void Crash()
+    {
+        if (!IsDriving) return;
+
+        Vector3 momentum = FlatForward() * CurrentSpeed;
+        StopDriving();
+
+        if (!body.isKinematic) body.linearVelocity = momentum;
     }
 
     void Steer()

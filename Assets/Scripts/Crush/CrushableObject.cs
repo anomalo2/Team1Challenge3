@@ -103,6 +103,9 @@ public class CrushableObject : MonoBehaviour
         structuralIntegrity <= 0f ? 1f : 1f - Mathf.Clamp01(currentIntegrity / structuralIntegrity);
 
     float currentIntegrity;
+    // Share of propertyValue already reported to CityObjective, 0..1. Damage is
+    // billed as it happens; destruction bills only the remainder.
+    float billedDamageFraction;
     Rigidbody body;
     SleepableBody sleepable;
     Vector3 baseScale;
@@ -196,6 +199,8 @@ public class CrushableObject : MonoBehaviour
             return;
         }
 
+        BillDamageSoFar();
+
         if (DamageFraction >= dentAtDamageFraction)
         {
             State = CrushState.Dented;
@@ -207,6 +212,22 @@ public class CrushableObject : MonoBehaviour
         }
 
         UpdateSquash();
+    }
+
+    /// <summary>
+    /// Reports new damage to the scoreboard in proportion to the object's value.
+    /// Indestructible objects never bill: they are not property loss.
+    /// </summary>
+    void BillDamageSoFar()
+    {
+        if (!countsAsPropertyDamage || !canBeDestroyed || CityObjective.Instance == null) return;
+
+        float fraction = DamageFraction;
+        if (fraction <= billedDamageFraction) return; // healed, or nothing new
+
+        CityObjective.Instance.ReportPropertyDamaged(
+            propertyValue * (fraction - billedDamageFraction), displayName);
+        billedDamageFraction = fraction;
     }
 
     /// <summary>
@@ -252,8 +273,11 @@ public class CrushableObject : MonoBehaviour
         if (sleepable != null) sleepable.Wake();
         else if (body != null) body.isKinematic = false;
 
+        // Bill whatever share of the value earlier damage has not already paid.
         if (countsAsPropertyDamage && CityObjective.Instance != null)
-            CityObjective.Instance.ReportPropertyDestroyed(propertyValue, displayName);
+            CityObjective.Instance.ReportPropertyDestroyed(
+                propertyValue * Mathf.Max(0f, 1f - billedDamageFraction), displayName);
+        billedDamageFraction = 1f;
 
         if (detonate) Explode();
         else if (wreckageEffect != null) Instantiate(wreckageEffect, transform.position, transform.rotation);

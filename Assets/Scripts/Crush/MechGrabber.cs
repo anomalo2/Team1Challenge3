@@ -49,10 +49,14 @@ public class MechGrabber : MonoBehaviour
     public InputActionProperty gripAction;
 
     [Header("Events")]
-    public UnityEvent onGrabbed;
-    public UnityEvent onReleased;
+    // Initialized here so they are never null when this component is added at
+    // runtime (MechLimbPhysics.AttachAll does that). In a player build nothing
+    // serializes a runtime-added component, so a bare field stays null and
+    // AddListener throws.
+    public UnityEvent onGrabbed = new UnityEvent();
+    public UnityEvent onReleased = new UnityEvent();
     [Tooltip("Fires while squeezing hard enough to actually damage what is held.")]
-    public UnityEvent onCrushing;
+    public UnityEvent onCrushing = new UnityEvent();
 
     /// <summary>Current grip, 0..1.</summary>
     public float Grip { get; private set; }

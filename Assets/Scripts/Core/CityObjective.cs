@@ -71,10 +71,30 @@ public class CityObjective : MonoBehaviour
         if (Instance == this) Instance = null;
     }
 
+    /// <summary>
+    /// Final share of an object's value, billed when it is wrecked. Damage it
+    /// took before that was already billed through ReportPropertyDamaged, so
+    /// callers pass only the remainder.
+    /// </summary>
     public void ReportPropertyDestroyed(float value, string what)
     {
         PropertyDamage += Mathf.Max(0f, value);
-        Report($"Destroyed: {what} (+{value:0} damage)", false);
+        Report($"Destroyed: {what} (+{value:0} damage) | total damage {PropertyDamage:0}", false);
+        CheckFailure();
+    }
+
+    /// <summary>
+    /// Partial damage as it happens: a dent, a crash, a squeeze. Billed in
+    /// proportion to the object's value, so the total climbs live instead of
+    /// only when something is finally destroyed. Quiet: no incident message,
+    /// because a squeeze reports every frame.
+    /// </summary>
+    public void ReportPropertyDamaged(float value, string what)
+    {
+        if (value <= 0f) return;
+
+        PropertyDamage += value;
+        onStateChanged?.Invoke();
         CheckFailure();
     }
 
