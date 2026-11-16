@@ -3,7 +3,7 @@ using UnityEngine;
 using UnityEngine.Events;
 
 /// <summary>
-/// The old lady. She walks a TrafficRoute from one kerb to the other and has no
+/// The old lady. She walks a PedestrianPath from one kerb to the other and has no
 /// idea how much danger she is in.
 ///
 /// NO DEATH, NO INJURY -- this is a hard rule, enforced in code
@@ -35,8 +35,10 @@ public class PedestrianCrosser : MonoBehaviour
     public string displayName = "Elderly pedestrian";
 
     [Header("Path")]
-    [Tooltip("Short route from the starting kerb to the far pavement.")]
-    public TrafficRoute crossRoute;
+    [Tooltip("Route from the starting kerb to the far pavement. Leave empty and she uses the PedestrianPath whose START is nearest to where you placed her (within Auto Path Radius). A PedestrianSpawner sets this for you.")]
+    public PedestrianPath path;
+    [Tooltip("When Path is empty, look for a path starting within this many metres of her.")]
+    public float autoPathRadius = 12f;
     public float walkSpeed = 0.9f;
     [Tooltip("She hurries when retreating, so a scare is a real setback.")]
     public float retreatSpeed = 1.6f;
@@ -76,6 +78,23 @@ public class PedestrianCrosser : MonoBehaviour
 
     [Header("Traffic awareness")]
     public LayerMask vehicleLayers;
+
+    [Header("Obstacles")]
+    [Tooltip("She stops for the mech and for anything physical in her way (cars, knocked-over props, wrecks, debris) instead of walking through it.")]
+    public bool blockedByObstacles = true;
+    [Tooltip("How far ahead she checks, beyond this frame's step.")]
+    public float obstacleLookahead = 0.45f;
+    public float bodyRadius = 0.3f;
+    [Tooltip("Blocked this long by something that is NOT the mech, she steps around it. The mech she always waits for.")]
+    public float detourAfter = 2.5f;
+
+    /// <summary>What is in her way right now, or null.</summary>
+    public Collider Blocker { get; private set; }
+    public bool BlockedByMech { get; private set; }
+
+    [Header("Feedback")]
+    [Tooltip("Spawned where she reaches the far pavement: the 'you did well' effect.")]
+    public GameObject successEffect;
 
     [Header("Events")]
     public UnityEvent onStartedCrossing;
@@ -174,8 +193,37 @@ public class PedestrianCrosser : MonoBehaviour
 
     void Start()
     {
-        if (crossRoute != null && crossRoute.IsValid)
-            targetIndex = crossRoute.NearestIndex(transform.position);
+        // Dropped into the scene on her own: walk the nearest path.
+        if (path == null)
+        {
+            path = PedestrianPath.FindNearestStart(transform.position, autoPathRadius);
+            if (path == null)
+                Debug.LogWarning($"[PedestrianCrosser] {name}: no PedestrianPath starts within {autoPathRadius}m, " +
+                                 "so she will stand still. Drag a PedestrianPath prefab next to her.", this);
+            else
+                PlaceAtStart();
+        }
+
+        if (path != null && path.IsValid)
+            targetIndex = path.NearestIndex(transform.position);
+    }
+
+    /// <summary>Give her a path and stand her on its first point, facing across.</summary>
+    public void AssignPath(PedestrianPath newPath)
+    {
+        path = newPath;
+        detour = null;
+        PlaceAtStart();
+        targetIndex = 0;
+        waitingSince = Time.time;
+        State = CrossState.WaitingAtCurb;
+    }
+
+    void PlaceAtStart()
+    {
+        if (path == null || !path.IsValid) return;
+        transform.SetPositionAndRotation(path.StartPosition, path.StartRotation);
+        lastAnimPosition = transform.position;
     }
 
     void Update()
@@ -189,7 +237,7 @@ public class PedestrianCrosser : MonoBehaviour
         }
 
         if (State == CrossState.Safe || State == CrossState.Carried) return;
-        if (crossRoute == null || !crossRoute.IsValid) return;
+        if (path == null || !path.IsValid) return;
 
         switch (State)
         {
@@ -235,16 +283,16 @@ public class PedestrianCrosser : MonoBehaviour
             return;
         }
 
-        Vector3 target = crossRoute.GetPosition(targetIndex);
+        Vector3 target = path.GetPosition(targetIndex);
         float distance = StepToward(target, walkSpeed);
 
         if (distance > waypointTolerance) return;
 
-        int next = crossRoute.NextIndex(targetIndex);
+        int next = path.NextIndex(targetIndex);
 
         // End of the route, or close enough to the far pavement.
-        if ((next < 0 || targetIndex >= crossRoute.Count - 1)
-            && Vector3.Distance(transform.position, crossRoute.EndPosition) <= arriveRadius)
+        if ((next < 0 || targetIndex >= path.Count - 1)
+            && Vector3.Distance(transform.position, path.EndPosition) <= arriveRadius)
         {
             ReachSafety();
             return;
@@ -255,7 +303,7 @@ public class PedestrianCrosser : MonoBehaviour
 
     void TickRetreating()
     {
-        Vector3 start = crossRoute.GetPosition(0);
+        Vector3 start = path.GetPosition(0);
         float distance = StepToward(start, retreatSpeed);
 
         if (distance > waypointTolerance) return;
@@ -291,20 +339,114 @@ public class PedestrianCrosser : MonoBehaviour
     /// <summary>Walk toward a point. Returns the pre-step flat distance to it.</summary>
     float StepToward(Vector3 target, float speed)
     {
+        // Going round something? Head for the side-step point first.
+        if (detour.HasValue)
+        {
+            Vector3 d = detour.Value - transform.position; d.y = 0f;
+            if (d.magnitude <= waypointTolerance) detour = null;
+        }
+        Vector3 aim = detour ?? target;
+
         Vector3 flat = target - transform.position;
         flat.y = 0f;
+        Vector3 aimFlat = aim - transform.position;
+        aimFlat.y = 0f;
 
-        if (flat.sqrMagnitude > 0.0001f)
+        if (aimFlat.sqrMagnitude > 0.0001f)
         {
-            Quaternion want = Quaternion.LookRotation(flat.normalized, Vector3.up);
+            Quaternion want = Quaternion.LookRotation(aimFlat.normalized, Vector3.up);
             transform.rotation = Quaternion.RotateTowards(
                 transform.rotation, want, turnSpeed * Time.deltaTime);
         }
 
-        transform.position = Vector3.MoveTowards(
-            transform.position, target, speed * Time.deltaTime);
+        float step = speed * Time.deltaTime;
+
+        if (blockedByObstacles && aimFlat.sqrMagnitude > 0.0001f && IsBlocked(transform.position, aimFlat.normalized, step))
+        {
+            blockedFor += Time.deltaTime;
+            if (!BlockedByMech && blockedFor >= detourAfter && !detour.HasValue) PlanDetour(aimFlat.normalized);
+            return flat.magnitude;   // stand still; animation reads zero speed
+        }
+
+        blockedFor = 0f;
+        Blocker = null;
+        BlockedByMech = false;
+
+        Vector3 next = Vector3.MoveTowards(transform.position, aim, step);
+        // Keep her feet at the path's height, not the detour point's.
+        if (detour.HasValue) next.y = Mathf.MoveTowards(transform.position.y, target.y, step);
+        transform.position = next;
 
         return flat.magnitude;
+    }
+
+    Vector3? detour;
+    float blockedFor;
+    readonly RaycastHit[] obstacleHits = new RaycastHit[16];
+
+    /// <summary>
+    /// Is something solid that should stop her within reach in this direction?
+    /// Counts: the mech; any non-kinematic rigid body; cars; props that have
+    /// been knocked out of place or broken. Ignores the ground, buildings,
+    /// props still standing where the level put them, and herself.
+    /// </summary>
+    bool IsBlocked(Vector3 from, Vector3 dir, float step)
+    {
+        Vector3 bottom = from + Vector3.up * (bodyRadius + 0.25f);
+        Vector3 top = from + Vector3.up * 1.5f;
+        int n = Physics.CapsuleCastNonAlloc(bottom, top, bodyRadius, dir, obstacleHits,
+            step + obstacleLookahead, ~0, QueryTriggerInteraction.Ignore);
+
+        for (int i = 0; i < n; i++)
+        {
+            Collider c = obstacleHits[i].collider;
+            if (c == null || c.transform.IsChildOf(transform)) continue;
+            // Already overlapping at the start of the cast: report only if it is
+            // genuinely in front of her, so she can always walk out of a touch.
+            if (obstacleHits[i].distance <= 0f)
+            {
+                Vector3 to = c.ClosestPoint(from + Vector3.up) - from; to.y = 0f;
+                if (to.sqrMagnitude > 0.0001f && Vector3.Dot(to.normalized, dir) < 0.3f) continue;
+            }
+
+            bool mech = c.GetComponentInParent<MechLocomotion>() != null
+                        || c.gameObject.layer == LayerMask.NameToLayer("MechCollider");
+            if (mech) { Blocker = c; BlockedByMech = true; return true; }
+
+            Rigidbody rb = c.attachedRigidbody;
+            if (rb == null) continue;   // static world: ground, kerbs, buildings
+            if (rb.GetComponent<DebrisLife>() != null) continue;   // small chunks, gone in seconds
+
+            if (rb.GetComponentInParent<CarController>() != null) { Blocker = c; BlockedByMech = false; return true; }
+
+            PropAssembly prop = rb.GetComponent<PropAssembly>();
+            if (prop != null && !prop.IsDisplaced) continue;   // standing where the level put it
+
+            if (!rb.isKinematic || prop != null || PropAssembly.OwnerOf(rb.transform) != null)
+            { Blocker = c; BlockedByMech = false; return true; }
+        }
+        return false;
+    }
+
+    /// <summary>Find a clear point to the side and step around the obstacle.</summary>
+    void PlanDetour(Vector3 dir)
+    {
+        Vector3 side = Vector3.Cross(Vector3.up, dir);
+        // Near first; far enough to get round a fallen lamp post.
+        float[] offsets = { 1f, -1f, 1.8f, -1.8f, 2.6f, -2.6f, 3.5f, -3.5f, 4.5f, -4.5f, 6f, -6f };
+        foreach (float o in offsets)
+        {
+            Vector3 p = transform.position + side * o + dir * 1.2f;
+            Vector3 to = p - transform.position; to.y = 0f;
+            if (IsBlocked(transform.position, to.normalized, to.magnitude)) continue;
+            Vector3 onward = dir; // from the side point, the way ahead must be clear too
+            if (IsBlocked(p, onward, 1.5f)) continue;
+            detour = p;
+            blockedFor = 0f;
+            Blocker = null;
+            return;
+        }
+        blockedFor = 0f;   // nowhere to go yet; wait and try again
     }
 
     bool RoadLooksClear()
@@ -379,14 +521,14 @@ public class PedestrianCrosser : MonoBehaviour
             return;
         }
 
-        bool haveRoute = crossRoute != null && crossRoute.IsValid;
+        bool haveRoute = path != null && path.IsValid;
 
         // Set down on the far pavement? She is home. Anywhere else and she
         // carries on. Guarding on haveRoute matters: without it a missing
         // route measures her distance to herself, which is 0, and every drop
         // would score as a rescue.
         if (haveRoute
-            && Vector3.Distance(transform.position, crossRoute.EndPosition) <= arriveRadius)
+            && Vector3.Distance(transform.position, path.EndPosition) <= arriveRadius)
         {
             ReachSafety();
             return;
@@ -398,7 +540,7 @@ public class PedestrianCrosser : MonoBehaviour
         // retreating - do not overwrite that.
         if (State == CrossState.Retreating) return;
 
-        if (haveRoute) targetIndex = crossRoute.NearestIndex(transform.position);
+        if (haveRoute) targetIndex = path.NearestIndex(transform.position);
         State = CrossState.Crossing;
     }
 
@@ -410,6 +552,14 @@ public class PedestrianCrosser : MonoBehaviour
 
         if (CityObjective.Instance != null)
             CityObjective.Instance.ReportCivilianSafe(displayName);
+
+        // Tell the player they did well.
+        if (successEffect != null)
+            Instantiate(successEffect, transform.position, Quaternion.identity);
+
+        // Settle into an idle pose instead of walking on the spot.
+        if (animator != null && animator.enabled && !string.IsNullOrEmpty(speedParameter))
+            animator.SetFloat(speedParameter, 0f);
 
         onSaved?.Invoke();
     }
@@ -471,13 +621,15 @@ public class PedestrianCrosser : MonoBehaviour
     /// <summary>Stand her up at the first waypoint so she can try again.</summary>
     public void ReturnToStart()
     {
+        detour = null;
+        blockedFor = 0f;
         SetRagdoll(false);
 
-        if (crossRoute != null && crossRoute.IsValid)
+        if (path != null && path.IsValid)
         {
-            transform.position = crossRoute.GetPosition(0);
+            transform.position = path.GetPosition(0);
 
-            Vector3 facing = crossRoute.GetPosition(1) - crossRoute.GetPosition(0);
+            Vector3 facing = path.GetPosition(1) - path.GetPosition(0);
             facing.y = 0f;
 
             if (facing.sqrMagnitude > 0.0001f)
@@ -559,10 +711,10 @@ public class PedestrianCrosser : MonoBehaviour
         Gizmos.color = Color.red;
         Gizmos.DrawWireSphere(transform.position, panicDistance);
 
-        if (crossRoute != null && crossRoute.IsValid)
+        if (path != null && path.IsValid)
         {
             Gizmos.color = Color.green;
-            Gizmos.DrawWireSphere(crossRoute.EndPosition, arriveRadius);
+            Gizmos.DrawWireSphere(path.EndPosition, arriveRadius);
         }
     }
 }

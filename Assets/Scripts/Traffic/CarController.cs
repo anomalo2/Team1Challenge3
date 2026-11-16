@@ -99,6 +99,9 @@ public class CarController : MonoBehaviour
         body = GetComponent<Rigidbody>();
         crushable = GetComponent<CrushableObject>();
 
+        // Broken cars clear themselves away after a while.
+        if (GetComponent<WreckDespawner>() == null) gameObject.AddComponent<WreckDespawner>();
+
         foreach (BoxCollider b in GetComponentsInChildren<BoxCollider>(true))
             if (!b.isTrigger) { crashBox = b; break; }
 
@@ -219,6 +222,10 @@ public class CarController : MonoBehaviour
 
             Rigidbody rb = other.attachedRigidbody;
             if (rb == null || rb == body) continue;
+
+            // Chunks thrown off a broken prop are gravel, not an accident:
+            // driving over them must not turn the car into a wreck.
+            if (rb.GetComponent<DebrisLife>() != null) continue;
 
             CarController otherCar = rb.GetComponent<CarController>();
 

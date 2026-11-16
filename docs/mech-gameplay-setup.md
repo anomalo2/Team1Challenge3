@@ -48,10 +48,12 @@ a gentle grip is always safe, so "pick up or crush" is a skill, not a dice roll.
 | `Crush/MechFootCrusher.cs` | a foot volume | stomp + standing weight |
 | `Crush/CrushOnImpact.cs` | anything throwable | feeds physics collisions into crush damage |
 | `Core/CityObjective.cs` | one scene object | the scoreboard |
-| `Traffic/TrafficRoute.cs` | an empty with child empties | a lane, or a crossing |
+| `Traffic/TrafficRoute.cs` | an empty with child empties | a traffic lane |
 | `Traffic/CarController.cs` | car prefab | drives the lane, brakes for obstacles |
 | `Traffic/TrafficSpawner.cs` | a scene object | keeps the lane populated |
-| `Civilians/PedestrianCrosser.cs` | the old lady | walks, waits, panics, dies, gets rescued |
+| `Civilians/PedestrianCrosser.cs` | the old lady | walks, waits, panics, gets rescued |
+| `Civilians/PedestrianPath.cs` | a crossing | kerb-to-kerb route; never seen by traffic |
+| `Civilians/PedestrianSpawner.cs` | `PedestrianCrossings` | one pedestrian at a time across each path |
 | `Civilians/CrosswalkChallenge.cs` | a scene object | arms the objective, decides win/lose |
 
 ---
@@ -122,12 +124,39 @@ Gizmos draw the path and flow direction when the route is selected.
 
 ## 4. The old lady
 
-Any humanoid from `CharacterAssets`. Add:
+### Placing pedestrians — drag and drop
 
-1. **Rigidbody** — mass 70, `isKinematic` ✔ (the script manages it).
-2. **Capsule Collider** — layer `Civilian`.
-3. **CrushableObject**
-4. **PedestrianCrosser**
+Prefabs in `Assets/Prefabs/Pedestrians` (also under **GameObject ▸ Pedestrians**
+and the Hierarchy right-click menu):
+
+| Prefab | What it is |
+|---|---|
+| `Grandma` | the pedestrian, fully set up (collider, CrushableObject, PedestrianCrosser, success effect) |
+| `PedestrianPath` | one crossing. Drag its **green START** and **red END** spheres onto the kerbs; points snap to the ground |
+| `PedestrianCrossings` | sends Grandma across each child path **one at a time**: she crosses, celebrates, leaves, and the next one appears at the next path's START. Loops |
+
+Two ways to use them:
+
+- **A sequence of crossings** — drag in `PedestrianCrossings`, press
+  **Add Crossing Path** in its Inspector for each crossing, drag the handles.
+  Paths are walked top to bottom in the Hierarchy.
+- **One pedestrian on her own** — drag `Grandma` next to the START of any
+  `PedestrianPath`. She picks the path whose START is within
+  `autoPathRadius` (12 m) and walks it.
+
+A `PedestrianPath` is **not** a `TrafficRoute`. Crossings used to be traffic
+routes, so the traffic tools (Add Spawners To All Lanes, Create Spawner) put
+car spawners on them. No traffic code can see a pedestrian path now.
+
+JohnTesting has a `PedestrianCrossings` with four crossings that loop round
+the four-way: west zebra → north zebra → east → south, each starting on the
+corner where the previous one finished.
+
+When she reaches the far pavement, `PedestrianCrosser.successEffect`
+(`CrossingSuccess` prefab) plays: confetti, a ring of green sparks, a floating
+"SAFE! +100" facing the pilot, and Mo's *Successful good deed* chime.
+
+`Tools ▸ Pedestrians ▸ Rebuild Pedestrian Prefabs` regenerates all of these.
 
 Her `CrushableObject` is where the whole theme lives:
 
@@ -161,8 +190,8 @@ warning if anyone sets them wrong. On top of that:
 So the worst outcome in the game is a frightened pedestrian hurrying back to
 the kerb.
 
-Her crossing is just another `TrafficRoute` — 3–4 waypoints, kerb to kerb,
-`loop` **✘**. Assign it to `crossRoute`.
+Her crossing is a `PedestrianPath` (see above), set by `PedestrianCrossings`
+or picked up by proximity.
 
 ### Two ways to win
 
@@ -188,14 +217,42 @@ retries you get before the objective is marked failed.
 
 ### The challenge object
 
-Empty GameObject at the junction, add **CrosswalkChallenge**:
+`CrosswalkChallenge` still exists for a single scripted crossing, but
+JohnTesting now uses `PedestrianCrossings` instead (it handles the sequence,
+and every rescue is scored through `CityObjective`).
 
-- `pedestrian` → the old lady
-- `player` → mech root, or the XR Origin until the mech exists
-- `armRadius` 30 — arms when the player gets close
-- `trafficDuringChallenge` → the spawners for that junction
-- `timeLimit` 0 to start with
-- `maxScares` 3 — retries before the objective fails
+---
+
+## 4b. Breakable props, play area, kill box
+
+**Props.** The city is one imported model (`Untitled.glb`), and Unity will not
+reparent a model's children in the editor. The old cluster builder tried, so
+the breakable holders ended up with a Rigidbody but no mesh or collider, and
+nothing could move. `PropAssembly` now lists each holder's parts and adopts
+them when the scene starts. From then on a prop is one rigid body: the mech
+wakes and shoves it, a hard hit breaks it, and on breaking a multi-part prop
+(sign on a pole) splits into separate rigid bodies, throws off debris in its
+own material, and puffs dust (`Prefabs/Effects/PropBreakDust`).
+`Tools ▸ Breakables ▸ 5 - Repair Empty Prop Holders` fixes a scene built the
+old way.
+
+**Legs.** `MechLegHitboxes` (auto-added to anything with `MechLocomotion`)
+puts a capsule on each thigh, shin and foot *bone*, so walking into scenery
+knocks it over. The model's own foot colliders sit on the skinned meshes and
+never moved with the legs.
+
+**Play area.** `PlayArea` (`PlayAreaBounds`) builds four invisible walls
+around the intersection for physics objects, and clamps the mech's root inside
+them every frame (the mech moves by transform, so colliders cannot stop it).
+Driving traffic is kinematic and passes through; wrecks do not. Size and move
+it with the component; the box is drawn in the Scene view.
+
+**Kill box.** `KillZone` is a large trigger 30 m under the map. A fallen
+pedestrian is stood back up at her crossing start, cars and props are
+removed, and the mech is returned to where it started.
+
+`Tools ▸ Challenge ▸ Apply Scene Setup` applies all of the above to the open
+scene and is safe to re-run.
 
 ---
 
