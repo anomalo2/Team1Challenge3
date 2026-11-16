@@ -98,12 +98,14 @@ public class PlayAreaBounds : MonoBehaviour
     /// the cockpit). The XR Origin gets the same shift unless it is already a
     /// child of the mech.
     /// </summary>
+    static XROrigin s_Rig;
+
     public static void MoveMech(Transform mechRoot, Vector3 delta)
     {
         mechRoot.position += delta;
 
-        XROrigin rig = FindFirstObjectByType<XROrigin>();
-        if (rig != null && !rig.transform.IsChildOf(mechRoot)) rig.transform.position += delta;
+        if (s_Rig == null) s_Rig = FindFirstObjectByType<XROrigin>();   // cached: called every frame while walking
+        if (s_Rig != null && !s_Rig.transform.IsChildOf(mechRoot)) s_Rig.transform.position += delta;
     }
 
     /// <summary>Nearest point to p that is inside the area (minus margin), horizontally.</summary>

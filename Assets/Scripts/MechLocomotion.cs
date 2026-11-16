@@ -5,10 +5,10 @@ using UnityEngine.InputSystem;
 /// Walks the mech with the LEFT thumbstick, in the direction the pilot is
 /// looking (flattened, so looking down does not walk you into the ground).
 ///
-/// It moves this transform - put it on the mech's root ("Mech"). The pilot
-/// comes along because MaintainPlayerPos keeps the XR Origin in the cockpit,
-/// and the hand/arm colliders come along because PhysicsColliders is a child
-/// of the mech. Turning is already handled: the mech faces where you look.
+/// It moves this transform - put it on the mech's root ("Mech") - and the XR
+/// Origin by the same amount, so the pilot stays in the seat (see
+/// PlayAreaBounds.MoveMech). The hand/arm colliders come along because
+/// PhysicsColliders is a child of the mech. Turning is already handled: the mech faces where you look.
 ///
 /// The mech is kinematic, so walking into traffic crashes cars through
 /// CarController's overlap check. It does not stop at buildings yet.
@@ -86,7 +86,11 @@ public class MechLocomotion : MonoBehaviour
         float rate = desired.sqrMagnitude > Velocity.sqrMagnitude ? acceleration : deceleration;
         Velocity = Vector3.MoveTowards(Velocity, desired, rate * Time.deltaTime);
 
+        // Carry the pilot along. MaintainPlayerPos moves the mech toward the
+        // pilot's head; if the stick moved only the mech, the head would be
+        // left behind the seat, read as "the pilot stepped backward", and the
+        // mech would be dragged back - the slingshot after letting go.
         if (Velocity.sqrMagnitude > 0.000001f)
-            transform.position += Velocity * Time.deltaTime;
+            PlayAreaBounds.MoveMech(transform, Velocity * Time.deltaTime);
     }
 }
