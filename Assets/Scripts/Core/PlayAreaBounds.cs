@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using Unity.XR.CoreUtils;
 using UnityEngine;
 
 /// <summary>
@@ -75,10 +76,34 @@ public class PlayAreaBounds : MonoBehaviour
             Transform t = keepInside[i];
             if (t == null) continue;
 
-            Vector3 p = t.position;
-            Vector3 clamped = Clamp(p);
-            if ((clamped - p).sqrMagnitude > 0.000001f) t.position = clamped;
+            // Room-scale walking (MaintainPlayerPos) moves the mech MODEL, a
+            // child of the root, so clamp whichever point actually walks.
+            Transform walker = WalkingPart(t);
+            Vector3 p = walker.position;
+            Vector3 correction = Clamp(p) - p;
+            if (correction.sqrMagnitude > 0.000001f) MoveMech(t, correction);
         }
+    }
+
+    static Transform WalkingPart(Transform mechRoot)
+    {
+        MaintainPlayerPos mp = mechRoot.GetComponentInChildren<MaintainPlayerPos>();
+        return mp != null ? mp.transform : mechRoot;
+    }
+
+    /// <summary>
+    /// Move a mech and its pilot together. MaintainPlayerPos now carries the
+    /// camera along with the mech instead of snapping it to the seat, so
+    /// moving only the mech would leave the pilot's view behind (or out of
+    /// the cockpit). The XR Origin gets the same shift unless it is already a
+    /// child of the mech.
+    /// </summary>
+    public static void MoveMech(Transform mechRoot, Vector3 delta)
+    {
+        mechRoot.position += delta;
+
+        XROrigin rig = FindFirstObjectByType<XROrigin>();
+        if (rig != null && !rig.transform.IsChildOf(mechRoot)) rig.transform.position += delta;
     }
 
     /// <summary>Nearest point to p that is inside the area (minus margin), horizontally.</summary>

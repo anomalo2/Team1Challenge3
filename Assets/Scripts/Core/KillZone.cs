@@ -45,7 +45,9 @@ public class KillZone : MonoBehaviour
             if (mechs[i] == null) continue;
             if (mechs[i].transform.position.y < TopY)
             {
-                mechs[i].transform.position = mechStarts[i];
+                // Move the pilot with it, or MaintainPlayerPos drags the mech
+                // straight back toward the camera.
+                PlayAreaBounds.MoveMech(mechs[i].transform, mechStarts[i] - mechs[i].transform.position);
                 Report(mechs[i].name, "respawned at start");
             }
         }

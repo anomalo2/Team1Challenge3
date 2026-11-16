@@ -174,6 +174,9 @@ public class PropAssembly : MonoBehaviour
 
     readonly Collider[] spotHits = new Collider[32];
 
+    /// <summary>What last stopped this prop respawning (for the Inspector / debugging).</summary>
+    public string LastBlocker { get; private set; }
+
     bool SpotOccupied()
     {
         int n = Physics.OverlapBoxNonAlloc(homeBounds.center, homeBounds.extents + Vector3.one * 0.3f, spotHits,
@@ -182,9 +185,9 @@ public class PropAssembly : MonoBehaviour
         {
             Collider c = spotHits[i];
             if (c == null || c.transform.IsChildOf(transform) || parts.Contains(c.transform)) continue;
-            if ((blockRespawnLayers.value & (1 << c.gameObject.layer)) != 0) return true;
+            if ((blockRespawnLayers.value & (1 << c.gameObject.layer)) != 0) { LastBlocker = c.name; return true; }
             Rigidbody rb = c.attachedRigidbody;
-            if (rb != null && !rb.isKinematic && OwnerOf(rb.transform) != this) return true;
+            if (rb != null && !rb.isKinematic && OwnerOf(rb.transform) != this) { LastBlocker = c.name; return true; }
         }
         return false;
     }

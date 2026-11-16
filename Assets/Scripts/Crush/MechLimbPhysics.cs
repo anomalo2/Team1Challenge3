@@ -42,6 +42,12 @@ public class MechLimbPhysics : MonoBehaviour
     public LayerMask pushLayers;
     [Tooltip("Fraction of the limb's velocity handed to an object the moment it is woken.")]
     public float velocityTransfer = 1f;
+    [Tooltip("Seconds after the scene loads before limbs can knock anything (the mech settles into its pose).")]
+    public float startupGrace = 1f;
+    [Tooltip("Movement faster than this (m/s) is a reposition, not a swing.")]
+    public float teleportSpeed = 30f;
+    [Tooltip("A limb slower than this (m/s) does not wake or shove anything it is touching.")]
+    public float minShoveSpeed = 0.3f;
     [Tooltip("Cap on the velocity handed over, m/s, so a tracking glitch cannot launch a car.")]
     public float maxTransferSpeed = 15f;
 
@@ -161,12 +167,21 @@ public class MechLimbPhysics : MonoBehaviour
         // through the Rigidbody. Anything else (leg hitboxes riding animated
         // bones) is only truthful through its Transform.
         Vector3 pos = body != null && followsBone ? body.position : transform.position;
+        bool teleported = false;
         if (haveLast && Time.fixedDeltaTime > 0f)
-            Velocity = Vector3.Lerp(Velocity, (pos - lastPosition) / Time.fixedDeltaTime, 0.5f);
+        {
+            Vector3 raw = (pos - lastPosition) / Time.fixedDeltaTime;
+            // A jump faster than anything a limb can swing is a reposition
+            // (spawn, recentre, respawn), not a blow.
+            if (raw.magnitude > teleportSpeed) { Velocity = Vector3.zero; teleported = true; }
+            else Velocity = Vector3.Lerp(Velocity, raw, 0.5f);
+        }
         lastPosition = pos;
         haveLast = true;
 
-        KnockOverlaps();
+        // The mech snaps into its pose for the first moments after loading;
+        // nothing it happens to be touching then should be knocked over.
+        if (!teleported && Time.timeSinceLevelLoad >= startupGrace) KnockOverlaps();
         ExpireIgnoredPairs();
     }
 
@@ -199,7 +214,9 @@ public class MechLimbPhysics : MonoBehaviour
                 Rigidbody rb = other.attachedRigidbody;
                 if (rb == null) continue;
 
-                if (rb.isKinematic) WakeAndShove(rb);
+                // Only a MOVING limb shoves. A limb that merely rests against a
+                // lamp post (e.g. the mech's starting pose) must not topple it.
+                if (rb.isKinematic && Velocity.magnitude >= minShoveSpeed) WakeAndShove(rb);
 
                 if (c != null && touchedNow.Add(c) && !touchedLast.Contains(c)) TryImpact(c);
             }
