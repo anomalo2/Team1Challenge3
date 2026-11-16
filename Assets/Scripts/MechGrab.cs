@@ -11,9 +11,7 @@ public class MechGrab : MonoBehaviour
     public FingerGrabTrigger ringTrigger;
 
     [Header("Hold")]
-    [Tooltip("The kinematic Rigidbody on the mech hand.")]
     public Rigidbody handRb;
-    [Tooltip("Force at which the object tears free. Infinity = unbreakable.")]
     public float breakForce = Mathf.Infinity;
     public float breakTorque = Mathf.Infinity;
 
