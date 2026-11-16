@@ -61,7 +61,10 @@ public class SleepableBody : MonoBehaviour
         body = GetComponent<Rigidbody>();
         car = GetComponentInParent<CarController>();
         crushable = GetComponentInParent<CrushableObject>();
+        followsBone = GetComponent<RigidbodyFollowBone>() != null || GetComponentInParent<MechLocomotion>() != null;
     }
+
+    bool followsBone;
 
     void OnEnable()
     {
@@ -81,6 +84,10 @@ public class SleepableBody : MonoBehaviour
         restingSince = -1f;
 
         if (IsAwake) return;
+
+        // A body driven along a bone (the mech's physics hands) must stay
+        // kinematic, or it stops following the bone and flails under physics.
+        if (followsBone) return;
 
         // Out of range there is no ground to land on, so staying kinematic is
         // the only safe answer; remember the request and honour it on return.

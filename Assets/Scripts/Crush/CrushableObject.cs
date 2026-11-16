@@ -256,6 +256,22 @@ public class CrushableObject : MonoBehaviour
         UpdateSquash();
     }
 
+    /// <summary>
+    /// Back to brand new: full integrity, intact, nothing billed. Used when a
+    /// broken prop respawns. The caller puts the body and visuals back.
+    /// </summary>
+    public void Restore()
+    {
+        State = CrushState.Intact;
+        currentIntegrity = structuralIntegrity;
+        billedDamageFraction = 0f;
+        IsOverstressed = false;
+        exploding = false;
+        IsHeld = false;
+        transform.localScale = baseScale;
+        SetVisual(intactVisual);
+    }
+
     void DestroyNow(bool detonate)
     {
         // Belt and braces: nothing indestructible ever reaches a destroyed state.

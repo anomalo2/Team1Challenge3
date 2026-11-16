@@ -78,6 +78,10 @@ public static class SleepSetup
             // The rig, civilians and anything animated manage themselves.
             if (rb.GetComponentInParent<PedestrianCrosser>() != null) { skipped++; continue; }
             if (rb.GetComponentInParent<Animator>() != null) { skipped++; continue; }
+            // The mech's physics hands follow bones and must stay kinematic; the
+            // XR rig manages itself.
+            if (rb.GetComponent<RigidbodyFollowBone>() != null || rb.GetComponentInParent<MechLocomotion>() != null
+                || rb.GetComponentInParent<Unity.XR.CoreUtils.XROrigin>() != null) { skipped++; continue; }
 
             if (rb.GetComponent<SleepableBody>() != null) { already++; continue; }
 

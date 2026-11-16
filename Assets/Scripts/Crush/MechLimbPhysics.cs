@@ -66,6 +66,7 @@ public class MechLimbPhysics : MonoBehaviour
     public Vector3 Velocity { get; private set; }
 
     Rigidbody body;
+    bool followsBone;
     readonly List<Collider> ownColliders = new List<Collider>();
     readonly Collider[] hits = new Collider[32];
     readonly Dictionary<CrushableObject, float> lastImpact = new Dictionary<CrushableObject, float>();
@@ -102,17 +103,25 @@ public class MechLimbPhysics : MonoBehaviour
             if (limb.GetComponent<MechLimbPhysics>() != null) continue;
 
             bool isHand = limb.name.ToLowerInvariant().Contains("hand");
-
-            // AddComponent runs Awake before we can set fields, so tell Awake
-            // not to build the grab volume and decide here instead.
-            autoAdding = true;
-            MechLimbPhysics p;
-            try { p = limb.gameObject.AddComponent<MechLimbPhysics>(); }
-            finally { autoAdding = false; }
-
-            p.createGrabVolume = isHand;
-            if (isHand) p.BuildGrabVolume();
+            AddTo(limb.gameObject, isHand);
         }
+    }
+
+    /// <summary>
+    /// Add limb physics to an object, deciding up front whether it grabs.
+    /// AddComponent runs Awake before fields can be set, so Awake is told not
+    /// to build the grab volume and the decision is made here instead.
+    /// </summary>
+    public static MechLimbPhysics AddTo(GameObject go, bool grabs)
+    {
+        autoAdding = true;
+        MechLimbPhysics p;
+        try { p = go.AddComponent<MechLimbPhysics>(); }
+        finally { autoAdding = false; }
+
+        p.createGrabVolume = grabs;
+        if (grabs) p.BuildGrabVolume();
+        return p;
     }
 
     static bool autoAdding;
@@ -127,6 +136,7 @@ public class MechLimbPhysics : MonoBehaviour
     void Awake()
     {
         body = GetComponent<Rigidbody>();
+        followsBone = GetComponent<RigidbodyFollowBone>() != null;
         if (pushLayers.value == 0) pushLayers = DefaultPushLayers();
 
         foreach (Collider c in GetComponentsInChildren<Collider>(true))
@@ -147,7 +157,10 @@ public class MechLimbPhysics : MonoBehaviour
 
     void FixedUpdate()
     {
-        Vector3 pos = body != null ? body.position : transform.position;
+        // A body driven by RigidbodyFollowBone.MovePosition reports its pose
+        // through the Rigidbody. Anything else (leg hitboxes riding animated
+        // bones) is only truthful through its Transform.
+        Vector3 pos = body != null && followsBone ? body.position : transform.position;
         if (haveLast && Time.fixedDeltaTime > 0f)
             Velocity = Vector3.Lerp(Velocity, (pos - lastPosition) / Time.fixedDeltaTime, 0.5f);
         lastPosition = pos;
@@ -243,7 +256,7 @@ public class MechLimbPhysics : MonoBehaviour
         float speed = Velocity.magnitude;
         if (speed < minImpactSpeed) return;
 
-        Vector3 to = c.transform.position - (body != null ? body.position : transform.position);
+        Vector3 to = c.transform.position - transform.position;
         float closing = to.sqrMagnitude > 0.0001f ? Mathf.Max(0f, Vector3.Dot(Velocity, to.normalized)) : speed;
         if (closing < minImpactSpeed) return;
 

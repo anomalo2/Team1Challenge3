@@ -132,17 +132,11 @@ public static class OldManSetup
         animator.applyRootMotion = false;      // PedestrianCrosser drives movement
 
         // ---- stand her on the crossing path if one exists
-        TrafficRoute path = FindCrossingPath();
+        PedestrianPath path = Object.FindFirstObjectByType<PedestrianPath>();
 
         if (path != null && path.IsValid)
         {
-            go.transform.position = path.GetPosition(0);
-
-            Vector3 facing = path.GetPosition(1) - path.GetPosition(0);
-            facing.y = 0f;
-            if (facing.sqrMagnitude > 0.0001f)
-                go.transform.rotation = Quaternion.LookRotation(facing.normalized, Vector3.up);
-
+            go.transform.SetPositionAndRotation(path.StartPosition, path.StartRotation);
             log.AppendLine("placed at the start of '" + path.gameObject.name + "'");
         }
         else log.AppendLine("no crossing path found - she is at the origin, move her onto the path");
@@ -153,23 +147,8 @@ public static class OldManSetup
         EditorUtility.SetDirty(go);
         UnityEditor.SceneManagement.EditorSceneManager.MarkSceneDirty(SceneManager.GetActiveScene());
 
-        log.AppendLine("DONE - now select her AND the path, then run '2 - Set Up Grandma Mission'");
+        log.AppendLine("DONE - run 'Tools > Pedestrians > Rebuild Pedestrian Prefabs' to turn her into the Grandma prefab");
         Finish(log);
-    }
-
-    static TrafficRoute FindCrossingPath()
-    {
-        TrafficRoute best = null;
-
-        foreach (TrafficRoute r in Object.FindObjectsByType<TrafficRoute>(FindObjectsSortMode.None))
-        {
-            string n = r.gameObject.name.ToLowerInvariant();
-            if (n.Contains("crossing") || n.Contains("pedestrian")) return r;
-
-            if (best == null) best = r;
-        }
-
-        return null;   // do not guess a traffic lane as her crossing
     }
 
     static AnimationClip FindClip(string assetPath, StringBuilder log, string label)

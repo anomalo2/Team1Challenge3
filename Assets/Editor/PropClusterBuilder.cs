@@ -59,6 +59,38 @@ public static class PropClusterBuilder
         Run(true);
     }
 
+    /// <summary>Optional dust effect handed to every PropAssembly built.</summary>
+    public static GameObject BreakEffectPrefab;
+
+    /// <summary>
+    /// Fix scenes built before PropAssembly existed: their holders have a
+    /// Rigidbody but no parts (the reparent was refused), so nothing breaks.
+    /// Deletes those empty holders and rebuilds them properly. Holders that
+    /// already work are left alone.
+    /// </summary>
+    [MenuItem("Tools/Breakables/5 - Repair Empty Prop Holders")]
+    public static void RepairEmptyHolders()
+    {
+        int removed = 0;
+        foreach (CrushableObject c in Object.FindObjectsByType<CrushableObject>(FindObjectsInactive.Include, FindObjectsSortMode.None))
+        {
+            if (c.GetComponent<PedestrianCrosser>() != null || c.GetComponent<CarController>() != null) continue;
+            PropAssembly pa = c.GetComponent<PropAssembly>();
+            bool hasParts = c.GetComponentInChildren<Renderer>(true) != null
+                            || (pa != null && pa.parts.Exists(p => p != null));
+            if (hasParts) continue;
+
+            Undo.DestroyObjectImmediate(c.gameObject);
+            removed++;
+        }
+
+        // Only rebuild what was broken. Rebuilding with nothing removed would
+        // turn every other unclaimed prop in the city into a physics body.
+        if (removed == 0) { Debug.Log("[PropClusters] no empty prop holders - nothing to repair."); return; }
+        Debug.Log("[PropClusters] removed " + removed + " empty prop holder(s); rebuilding.");
+        Run(true);
+    }
+
     public static void AnalyzeBatch() { Run(false); }
     public static void BuildBatch() { Run(true); }
 
@@ -104,6 +136,10 @@ public static class PropClusterBuilder
 
         // ---- candidates
         List<Renderer> candidates = new List<Renderer>();
+
+        HashSet<Transform> claimed = new HashSet<Transform>();
+        foreach (PropAssembly pa in Object.FindObjectsByType<PropAssembly>(FindObjectsInactive.Include, FindObjectsSortMode.None))
+            foreach (Transform t in pa.parts) if (t != null) claimed.Add(t);
         int rejectedFar = 0;
         int rejectedBig = 0, rejectedPlate = 0, rejectedDynamic = 0, rejectedNotProp = 0;
 
@@ -113,6 +149,7 @@ public static class PropClusterBuilder
             if (r is SkinnedMeshRenderer) { rejectedDynamic++; continue; }
 
             if (!IsFreeStanding(r)) { rejectedDynamic++; continue; }
+            if (claimed.Contains(r.transform)) { rejectedDynamic++; continue; }   // already in a PropAssembly
 
             // The source model labels its own content: prop_* is street
             // furniture, unit_* is building, backdrop_* is distant scenery.
@@ -250,10 +287,21 @@ public static class PropClusterBuilder
             // Pivot at the base so a toppling prop rotates about its foot.
             holder.transform.position = new Vector3(cl.Bounds.center.x, cl.Bounds.min.y, cl.Bounds.center.z);
 
+            PropAssembly assembly = holder.AddComponent<PropAssembly>();
+            assembly.breakEffect = BreakEffectPrefab;
+
             foreach (Renderer r in cl.Parts)
             {
                 GameObjectUtility.SetStaticEditorFlags(r.gameObject, 0);
-                r.transform.SetParent(holder.transform, true);   // keeps world pose
+
+                // Parts that belong to an imported model (the whole city is one
+                // glb) cannot be reparented in the editor - Unity refuses, and
+                // the holder used to end up empty. PropAssembly adopts them at
+                // runtime instead. Loose objects can be parented right now.
+                if (PrefabUtility.IsPartOfPrefabInstance(r.gameObject))
+                    assembly.parts.Add(r.transform);
+                else
+                    r.transform.SetParent(holder.transform, true);   // keeps world pose
 
                 if (crushLayer >= 0) r.gameObject.layer = crushLayer;
 
@@ -272,7 +320,7 @@ public static class PropClusterBuilder
 
             if (crushLayer >= 0) holder.layer = crushLayer;
 
-            Rigidbody rb = holder.AddComponent<Rigidbody>();
+            Rigidbody rb = holder.GetComponent<Rigidbody>();
             rb.mass = Mathf.Clamp(cl.Bounds.size.magnitude * 25f, 15f, 800f);
 
             // Kinematic while intact. Two reasons: the city geometry has no
@@ -291,7 +339,7 @@ public static class PropClusterBuilder
 
             rb.mass = mass;
 
-            CrushableObject crush = holder.AddComponent<CrushableObject>();
+            CrushableObject crush = holder.GetComponent<CrushableObject>();
             crush.displayName = holder.name;
             crush.canBeDestroyed = true;
             crush.canBeGrabbed = true;

@@ -7,6 +7,7 @@ public class HumanToMechBoneMirror : MonoBehaviour
 {
     [SerializeField] Transform playerBone;
     [SerializeField] Vector3 rotateOffset;
+    [Tooltip("Optional. When set, the bone only mirrors while the pilot looks at this GazeCheck's target. Leave empty to always mirror.")]
     [SerializeField] GazeCheck gaze;
     [SerializeField] bool lockedRot;
     float mechBoneSpeed;
@@ -23,7 +24,8 @@ public class HumanToMechBoneMirror : MonoBehaviour
 
     private void LateUpdate()
     {
-        if (gaze.IsSpeakerInView())   //check gaze
+        // Gaze is optional: with no GazeCheck assigned the bone always mirrors.
+        if (gaze == null || gaze.IsSpeakerInView())   //check gaze
         {
             if (!lockedRot)
             {
